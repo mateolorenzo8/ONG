@@ -58,7 +58,7 @@ public final class ONG {
             if (donation == null) throw new IllegalArgumentException("Donation not found");
         }
 
-        if (donation.getStatus() == Status.ASSIGNED) throw new RuntimeException("Assignment already assigned");
+        if (donation.getStatus() == Status.ASSIGNED) throw new RuntimeException("Donation already assigned");
 
         Assignment assignment = new Assignment(
                 donation,
