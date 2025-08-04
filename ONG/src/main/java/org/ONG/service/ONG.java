@@ -1,12 +1,18 @@
 package org.ONG.service;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Root;
 import org.ONG.enums.Status;
 import org.ONG.models.*;
 import org.ONG.dto.*;
 import org.ONG.utils.HibernateUtil;
 import org.hibernate.Session;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public final class ONG {
     private static volatile ONG instance;
@@ -70,5 +76,60 @@ public final class ONG {
         }
 
         return assignment;
+    }
+
+    public List<CollectedByTypeDTO> getTotalCollectedByDonorType() {
+        try (Session session = HibernateUtil.getSession()) {
+            CriteriaBuilder cb = session.getCriteriaBuilder();
+            CriteriaQuery<CollectedByTypeDTO> cq = cb.createQuery(CollectedByTypeDTO.class);
+            Root<Donation> root = cq.from(Donation.class);
+
+            Expression<BigDecimal> totalAmount = cb.sum(root.get("amount"));
+
+            cq.multiselect(
+                    root.get("donorType"),
+                    cb.count(root),
+                    totalAmount
+            ).groupBy(
+                    root.get("donorType")
+            ).orderBy(
+                    cb.desc(totalAmount)
+            );
+
+            return session.createQuery(cq).getResultList();
+        }
+
+        public List<CollectedByCategoryStatusDTO> getCollectedByCategoryAndStatus() {
+            try (Session session = HibernateUtil.getSession()) {
+                CriteriaBuilder cb = session.getCriteriaBuilder();
+                CriteriaQuery<CollectedByCategoryStatusDTO> cq = cb.createQuery(CollectedByCategoryStatusDTO.class);
+                Root<Donation> root = cq.from(Donation.class);
+
+                Expression<Long> countReceived = cb.sum(
+                        cb.<Long>selectCase()
+                                .when(cb.equal(root.get("status"), Status.RECEIVED), 1L)
+                                .otherwise(0L)
+                );
+
+                Expression<Long> countAssigned = cb.sum(
+                        cb.<Long>selectCase()
+                                .when(cb.equal(root.get("status"), Status.ASSIGNED), 1L)
+                                .otherwise(0L)
+                );
+
+                Expression<BigDecimal> totalAmount = cb.sum(root.get("amount"));
+
+                cq.multiselect(
+                        root.get("category"),
+                        countReceived,
+                        countAssigned,
+                        totalAmount
+                ).groupBy(
+                        root.get("category")
+                ).orderBy(
+                        cb.desc(totalAmount)
+                );
+            }
+        }
     }
 }
