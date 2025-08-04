@@ -98,14 +98,15 @@ public final class ONG {
 
             return session.createQuery(cq).getResultList();
         }
+    }
 
-        public List<CollectedByCategoryStatusDTO> getCollectedByCategoryAndStatus() {
-            try (Session session = HibernateUtil.getSession()) {
-                CriteriaBuilder cb = session.getCriteriaBuilder();
-                CriteriaQuery<CollectedByCategoryStatusDTO> cq = cb.createQuery(CollectedByCategoryStatusDTO.class);
-                Root<Donation> root = cq.from(Donation.class);
+    public List<CollectedByCategoryStatusDTO> getCollectedByCategoryAndStatus() {
+        try (Session session = HibernateUtil.getSession()) {
+            CriteriaBuilder cb = session.getCriteriaBuilder();
+            CriteriaQuery<CollectedByCategoryStatusDTO> cq = cb.createQuery(CollectedByCategoryStatusDTO.class);
+            Root<Donation> root = cq.from(Donation.class);
 
-                Expression<Long> countReceived = cb.sum(
+            Expression<Long> countReceived = cb.sum(
                         cb.<Long>selectCase()
                                 .when(cb.equal(root.get("status"), Status.RECEIVED), 1L)
                                 .otherwise(0L)
@@ -129,7 +130,8 @@ public final class ONG {
                 ).orderBy(
                         cb.desc(totalAmount)
                 );
-            }
+
+            return session.createQuery(cq).getResultList();
         }
     }
 }
